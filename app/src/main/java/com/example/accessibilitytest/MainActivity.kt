@@ -1,6 +1,6 @@
 package com.example.accessibilitytest
-package com.example.android.apis.accessibility
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,11 +17,16 @@ import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityEvent
 
 class MyAccessibilityService : AccessibilityService() {
-    ...
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+    }
     override fun onInterrupt() {}
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
-    ...
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        return super.onUnbind(intent)
+    }
 }
 
 class MainActivity : ComponentActivity() {

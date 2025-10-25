@@ -5,8 +5,6 @@
         Requires permission to observe your screen and click buttons for you.
         DO NOT ALLOW ANY PERMISSIONS UNLESS YOU KNOW WHY, this is just a test app.
     </string>
-
-    <string name="first_fragment_label">First Fragment</string>
-    <string name="second_fragment_label">Second Fragment</string>
-
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

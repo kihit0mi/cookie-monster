@@ -13,21 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.accessibilitytest.ui.theme.AccessibilityTestTheme
-import android.accessibilityservice.AccessibilityService
-import android.view.accessibility.AccessibilityEvent
-
-class MyAccessibilityService : AccessibilityService() {
-    override fun onServiceConnected() {
-        super.onServiceConnected()
-    }
-    override fun onInterrupt() {}
-
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
-
-    override fun onUnbind(intent: Intent?): Boolean {
-        return super.onUnbind(intent)
-    }
-}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,7 +22,6 @@ class MainActivity : ComponentActivity() {
             AccessibilityTestTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = "Android",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -47,9 +31,9 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
+fun Greeting(modifier: Modifier = Modifier) {
     Text(
-        text = "Hello $name!",
+        text = "This is COOKIE MONSTER!",
         modifier = modifier
     )
 }
@@ -58,6 +42,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun GreetingPreview() {
     AccessibilityTestTheme {
-        Greeting("Android")
+        Greeting()
     }
 }

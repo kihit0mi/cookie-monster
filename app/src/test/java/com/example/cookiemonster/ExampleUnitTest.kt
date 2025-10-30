@@ -1,4 +1,4 @@
-package com.example.accessibilitytest
+package com.example.cookiemonster
 
 import org.junit.Test
 

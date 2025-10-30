@@ -1,6 +1,4 @@
-package com.example.accessibilitytest;
-
-import static android.content.ContentValues.TAG;
+package cz.kihitomi.cookiemonster;
 
 import android.accessibilityservice.AccessibilityService;
 import android.content.Intent;
@@ -14,7 +12,7 @@ public class MyAccessibilityService extends AccessibilityService {
 
     private static final String TAG = "Cookie_Monster";
     private static final String TEST = "Test_Tag";
-    private static final String TARGET_WORD = "hltv";
+    private static final String TARGET_WORD = "the";
 
     @Override
     protected void onServiceConnected() {
@@ -26,8 +24,16 @@ public class MyAccessibilityService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         //chceme jen chrome
         if (event.getPackageName()==null|| !(event.getPackageName().toString().equals("com.android.chrome"))){
+            Log.d(TAG, "Nejsme v chromu.");
+            return;
         }
 
+        final int eventType = event.getEventType();
+        if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+            eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+            Log.d(TAG, "Nejsme v TYPE_WINDOW_STATE_CHANGED ani TYPE_WINDOW_CONTENT_CHANGED.");
+            return;
+        }
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if(rootNode == null) {
             return;
@@ -37,6 +43,7 @@ public class MyAccessibilityService extends AccessibilityService {
 
     private void travelSearch(AccessibilityNodeInfo node, String searchCookie){
         if (node==null) {
+            Log.d(TAG, "node je null");
             return;
         }
 
@@ -52,7 +59,7 @@ public class MyAccessibilityService extends AccessibilityService {
             AccessibilityNodeInfo child = node.getChild(i);
             travelSearch(child, searchCookie);
             if (child != null) {
-                child.recycle(); // Recycle child node when done
+                child.recycle();
             }
         }
 

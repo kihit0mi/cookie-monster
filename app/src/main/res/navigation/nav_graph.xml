@@ -6,6 +6,6 @@
 
     <fragment
         android:id="@+id/FirstFragment"
-        android:name="com.example.accessibilitytest.FirstFragment" />
+        android:name="cz.kihitomi.cookiemonster.FirstFragment" />
 
 </navigation>

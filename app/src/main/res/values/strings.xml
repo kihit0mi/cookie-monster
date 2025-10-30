@@ -1,10 +1,5 @@
 <resources>
-    <string name="app_name">Cookie Monster</string>
-    <string name="accessibility_service_description">
-        Enables collecting cookies by monitoring user interactions.
-        Requires permission to observe your screen and click buttons for you.
-        DO NOT ALLOW ANY PERMISSIONS UNLESS YOU KNOW WHY, this is just a test app.
-    </string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="app_name" translatable="false">Cookie Monster</string>
+    <string name="accessibility_service_description">"         Enables collecting cookies by monitoring user interactions.         Requires permission to observe your screen and click buttons for you.         DO NOT ALLOW ANY PERMISSIONS UNLESS YOU KNOW WHY, this is just a test app.     "</string>
+    <string name="hello_blank_fragment">k</string>
 </resources>

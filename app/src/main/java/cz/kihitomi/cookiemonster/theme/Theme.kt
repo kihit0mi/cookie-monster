@@ -1,4 +1,4 @@
-package com.example.accessibilitytest.ui.theme
+package cz.kihitomi.cookiemonster.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme

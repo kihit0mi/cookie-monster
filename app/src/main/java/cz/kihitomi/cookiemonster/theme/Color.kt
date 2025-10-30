@@ -1,4 +1,4 @@
-package com.example.accessibilitytest.ui.theme
+package cz.kihitomi.cookiemonster.theme
 
 import androidx.compose.ui.graphics.Color
 

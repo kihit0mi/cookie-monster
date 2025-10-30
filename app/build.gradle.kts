@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.accessibilitytest"
+    namespace = "cz.kihitomi.cookiemonster"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.example.accessibilitytest"
+        applicationId = "cz.kihitomi.accessibilitytest"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

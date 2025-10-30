@@ -20,4 +20,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "AccessibilityTest"
-include(":app")
+include(":cookie-monster")

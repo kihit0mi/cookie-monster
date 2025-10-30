@@ -1,4 +1,4 @@
-package com.example.cookiemonster
+package cz.kihitomi.cookiemonster
 
 import org.junit.Test
 

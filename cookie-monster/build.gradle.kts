@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "cz.kihitomi.accessibilitytest"
+        applicationId = "cz.kihitomi.cookiemonster"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

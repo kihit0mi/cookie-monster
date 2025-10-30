@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AccessibilityTest"
+rootProject.name = "CookieMonster"
 include(":cookie-monster")

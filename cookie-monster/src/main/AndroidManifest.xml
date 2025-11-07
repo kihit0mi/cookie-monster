@@ -27,6 +27,13 @@
             </intent-filter>
         </activity>
 
+        <activity 
+            android:name=".LoggerActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.CookieMonster">
+        </activity>
+        
         <service
             android:name=".MyAccessibilityService"
             android:exported="true"

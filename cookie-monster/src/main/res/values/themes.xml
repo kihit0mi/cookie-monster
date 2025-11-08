@@ -4,6 +4,5 @@
     <style name="Theme.CookieMonster" parent="android:Theme.Material.Light.NoActionBar" />
     <!-- Base application theme. -->
     <style name="Base.Theme.CookieMonster" parent="Theme.Material3.DayNight.NoActionBar">
-        <item.name=colorPrimary>
     </style>
 </resources>

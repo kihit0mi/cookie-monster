@@ -1,6 +1,7 @@
 package cz.kihitomi.cookiemonster;
 
 import android.accessibilityservice.AccessibilityService;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -9,7 +10,6 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.util.Log;
 import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.Toast;
-
 import java.util.List;
 
 
@@ -24,13 +24,15 @@ public class MyAccessibilityService extends AccessibilityService {
         Log.d(TAG, "Cookie Monster woke up.");
         LogManager.INSTANCE.addLog(TAG, "Cookie Monster woke up.");
 
-        android.accessibilityservice.AccessibilityServiceInfo info = new android.accessibilityservice.AccessibilityServiceInfo();
+        AccessibilityServiceInfo info = new AccessibilityServiceInfo();
         info.eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED |
                 AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED;
-        info.feedbackType = android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_GENERIC;
-        info.flags = android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS |
-                android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
+        info.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC;
+        info.flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS |
+                AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS |
+                AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS;
         info.notificationTimeout = 100;
+        //info.description = (getString(R.string.accessibility_service_description));
 
         setServiceInfo(info);
 
@@ -41,11 +43,11 @@ public class MyAccessibilityService extends AccessibilityService {
             Log.d(TAG, "Feedback type: " + checkInfo.feedbackType);
             Log.d(TAG, "Flags: " + checkInfo.flags);
         } else {
-            Log.d(TAG, "ServiceInfo is NULL!");
+            Log.d("debug", "ServiceInfo is NULL!");
         }
 
 
-        Log.d(TAG, "Service configured programmatically");
+        //Log.d(TAG, "Service configured programmatically");
 
         Toast.makeText(this, "Accessibility Service Connected!", Toast.LENGTH_LONG).show();
 
@@ -60,6 +62,7 @@ public class MyAccessibilityService extends AccessibilityService {
         }
 
         final int eventType = event.getEventType();
+        Log.d(TAG, String.valueOf(eventType));
         if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
                 eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
             return;
@@ -81,18 +84,18 @@ public class MyAccessibilityService extends AccessibilityService {
             travelSearch(rootNode, targetWord);
         } else {
             Log.d(TAG, "Attempt " + attempt + " failed, retrying...");
-            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    tryGetRootNode(attempt + 1, targetWord);
-                }
-            }, 200);
+
+            AccessibilityServiceInfo info = getServiceInfo();
+            Log.d("debug", "Service info: " + (info != null ? "exists" : "null"));
+
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() ->
+                    tryGetRootNode(attempt + 1, targetWord), 200);
         }
     }
 
     private void travelSearch(AccessibilityNodeInfo node, String searchCookie){
         if (node==null) {
-            Log.d(TAG, "node je null");
+            Log.d("debugTravelSearch", "node je null");
             return;
         }
 

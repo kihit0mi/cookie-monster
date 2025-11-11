@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.view.accessibility.AccessibilityWindowInfo;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -17,14 +16,15 @@ public class MyAccessibilityService extends AccessibilityService {
     private static final String TAG = "Cookie_Monster";
     private static final String TEST = "Test_Tag";
 
+
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
         Log.d(TAG, "Cookie Monster woke up.");
-        LogManager.INSTANCE.addLog(TAG, "Cookie Monster woke up.");
 
-        android.accessibilityservice.AccessibilityServiceInfo checkInfo = getServiceInfo();
+        AccessibilityServiceInfo checkInfo = getServiceInfo();
         if (checkInfo != null) {
+            Log.d(TAG, "AccessibilityServiceInfo: " + checkInfo);
             Log.d(TAG, "Event types: " + checkInfo.eventTypes);
             Log.d(TAG, "Package names: " + (checkInfo.packageNames != null ? java.util.Arrays.toString(checkInfo.packageNames) : "ALL"));
             Log.d(TAG, "Feedback type: " + checkInfo.feedbackType);
@@ -34,8 +34,7 @@ public class MyAccessibilityService extends AccessibilityService {
         }
 
 
-        //Log.d(TAG, "Service configured programmatically");
-
+        LogManager.INSTANCE.addLog(TAG, "Cookie Monster woke up:" + checkInfo);
         Toast.makeText(this, "Accessibility Service Connected!", Toast.LENGTH_LONG).show();
 
     }

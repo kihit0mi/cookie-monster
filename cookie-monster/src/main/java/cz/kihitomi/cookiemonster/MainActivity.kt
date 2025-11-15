@@ -1,5 +1,7 @@
 package cz.kihitomi.cookiemonster
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -7,6 +9,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.text.font.FontWeight
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,7 +49,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
+        createNotificationChannel()
         val sharedPrefs = getSharedPreferences("CookieMonsterPrefs", Context.MODE_PRIVATE)
 
         setContent {
@@ -144,8 +147,9 @@ class MainActivity : ComponentActivity() {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Button(onClick = {
+                                LogManager.clearLogs()
                                 searchWord = userInput
-                                sharedPrefs.edit().putString("target_word", searchWord).apply()
+                                sharedPrefs.edit().putString("target_word", searchWord.lowercase()).apply()
                                 userInput = ""
                                 showCheckmark = true
                             }) {
@@ -177,7 +181,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = getString(R.string.channel_name)
+            val descriptionText = getString(R.string.channel_description)
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel("cookie_alert", name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
 @Composable
 fun Greeting(modifier: Modifier = Modifier) {
     Text(

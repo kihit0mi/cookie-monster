@@ -85,7 +85,7 @@ class ActivityLogger : ComponentActivity() {
                             )
 
                             val sharedPrefs = getSharedPreferences("CookieMonsterPrefs", Context.MODE_PRIVATE)
-                            val targetWord = sharedPrefs.getString("target_word", "Not set")
+                            val targetWord = sharedPrefs.getString("target_word", "cookie")
 
                             Text(
                                 text = "Hledame slovo: $targetWord",

@@ -1,20 +1,27 @@
 package cz.kihitomi.cookiemonster;
 
+import android.Manifest;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.util.Log;
-import android.widget.Toast;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 
+@SuppressLint("AccessibilityPolicy")
 public class MyAccessibilityService extends AccessibilityService {
 
     private static final String TAG = "Cookie_Monster";
-    private static final String TEST = "Test_Tag";
+    private static final int NOTIFICATION_ID = 1;
 
 
     @Override
@@ -33,10 +40,7 @@ public class MyAccessibilityService extends AccessibilityService {
             Log.d("debug", "ServiceInfo is NULL!");
         }
 
-
-        LogManager.INSTANCE.addLog(TAG, "Cookie Monster woke up:" + checkInfo);
-        Toast.makeText(this, "Accessibility Service Connected!", Toast.LENGTH_LONG).show();
-
+            LogManager.INSTANCE.addLog(TAG, "Cookie Monster woke up!");
     }
 
     @Override
@@ -49,8 +53,7 @@ public class MyAccessibilityService extends AccessibilityService {
 
         final int eventType = event.getEventType();
         Log.d(TAG, String.valueOf(eventType));
-        if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
-                eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+        if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             return;
         }
 
@@ -80,38 +83,61 @@ public class MyAccessibilityService extends AccessibilityService {
     }
 
     private void travelSearch(AccessibilityNodeInfo node, String searchCookie){
-        if (node==null) {
-            Log.d("debugTravelSearch", "node je null");
-            return;
-        }
+        boolean found = travelSearchHelper(node, searchCookie);
 
-        Log.d(TAG, "Checking node. Children: " + node.getChildCount());
+        if (found) {
+            Log.d(TAG, "Nasli jsme slovo.");
+            LogManager.INSTANCE.addLog(TAG, "Nasli jsme vase slovo.");
+
+            showNotification(searchCookie);
+        }
+    }
+
+    private void showNotification(String word) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "cookie_alert")
+                .setSmallIcon(R.drawable.notification_icon)
+                .setContentTitle("Slovo " + word)
+                .setContentText("Nasli jsme vase slovo.")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            notificationManager.notify(NOTIFICATION_ID, builder.build());
+        }
+    }
+
+    private boolean travelSearchHelper(AccessibilityNodeInfo node, String searchCookie){
+        if (node == null) {
+            return false;
+        }
 
         if (node.getText() != null){
             String nodeText = node.getText().toString().toLowerCase();
-            Log.d(TEST, nodeText);
-            LogManager.INSTANCE.addLog(TEST, nodeText);
-
             if (nodeText.contains(searchCookie.toLowerCase())){
-                Log.d(TAG, "Nasli jsme slovo.");
-                LogManager.INSTANCE.addLog(TAG, "Nasli jsme vase slovo.");
-
-                //TODO pridat klikani na button, zatim jen loguji
+                return true;
             }
         }
+
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
-            travelSearch(child, searchCookie);
+            boolean found = travelSearchHelper(child, searchCookie);
             if (child != null) {
                 child.recycle();
             }
+            if (found) {
+                return true;
+            }
         }
 
+        return false;
     }
 
     private String getTargetWord() {
         SharedPreferences sharedPrefs = getSharedPreferences("CookieMonsterPrefs", Context.MODE_PRIVATE);
-        return sharedPrefs.getString("target_word","");
+        return sharedPrefs.getString("target_word","cookie");
     }
 
     @Override

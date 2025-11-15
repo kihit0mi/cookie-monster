@@ -2,4 +2,6 @@
     <string name="app_name" translatable="false">Cookie Monster</string>
     <string name="accessibility_service_description">"         Enables collecting cookies by monitoring user interactions.         Requires permission to observe your screen and click buttons for you.         DO NOT ALLOW ANY PERMISSIONS UNLESS YOU KNOW WHY, this is just a test app.     "</string>
     <string name="hello_blank_fragment">k</string>
+    <string name="channel_name">Word found alert</string>
+    <string name="channel_description">Notification for when your target word is found!</string>
 </resources>

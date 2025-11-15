@@ -14,7 +14,7 @@ object LogManager {
     }
 
     fun getAllLogs(): List<LogEntry> {
-        return logs.toList()
+        return logs.toList().reversed()
     }
 
     fun clearLogs() {

@@ -79,6 +79,7 @@ class ActivityLogger : ComponentActivity() {
                                 text = "LOGS",
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,
+                                color = Color.Black,
                                 modifier = Modifier
                                     .padding(16.dp)
                                     .align(Alignment.CenterHorizontally)
@@ -91,6 +92,7 @@ class ActivityLogger : ComponentActivity() {
                                 text = "Hledame slovo: $targetWord",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Light,
+                                color = Color.Black,
                                 modifier = Modifier
                                     .padding(bottom = 8.dp)
                                     .padding(horizontal = 16.dp)

@@ -1,8 +1,0 @@
-<resources>
-    <string name="app_name">AccessibilityTest</string>
-    <string name="accessibility_service_description">
-        Enables collecting cookies by monitoring user interactions.
-        Requires permission to observe your screen and click buttons for you.
-        DO NOT ALLOW ANY PERMISSIONS UNLESS YOU KNOW WHY, this is just a test app.
-    </string>
-</resources>

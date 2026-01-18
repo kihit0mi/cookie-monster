@@ -1,155 +1,136 @@
 package cz.kihitomi.cookiemonster;
 
-import android.Manifest;
 import android.accessibilityservice.AccessibilityService;
-import android.accessibilityservice.AccessibilityServiceInfo;
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
+import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.util.Log;
 
-import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
 
 
 @SuppressLint("AccessibilityPolicy")
 public class MyAccessibilityService extends AccessibilityService {
 
-    private static final String TAG = "Cookie_Monster";
-    private static final int NOTIFICATION_ID = 1;
+    // Static reference for testing purposes
+    public static MyAccessibilityService instance = null;
 
+    private static final String TAG = "Cookie_Monster";
 
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
+        instance = this; // Set the static reference
         Log.d(TAG, "Cookie Monster woke up.");
-
-        AccessibilityServiceInfo checkInfo = getServiceInfo();
-        if (checkInfo != null) {
-            Log.d(TAG, "AccessibilityServiceInfo: " + checkInfo);
-            Log.d(TAG, "Event types: " + checkInfo.eventTypes);
-            Log.d(TAG, "Package names: " + (checkInfo.packageNames != null ? java.util.Arrays.toString(checkInfo.packageNames) : "ALL"));
-            Log.d(TAG, "Feedback type: " + checkInfo.feedbackType);
-            Log.d(TAG, "Flags: " + checkInfo.flags);
-        } else {
-            Log.d("debug", "ServiceInfo is NULL!");
-        }
-
-            LogManager.INSTANCE.addLog(TAG, "Cookie Monster woke up!");
+        LogManager.INSTANCE.addLog(TAG, "Cookie Monster woke up!");
     }
+    private final android.os.Handler debounceHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable debounceRunnable = null;
+    private static final long DEBOUNCE_DELAY_MS = 500;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        final String targetWord = getTargetWord();
-
-        if (event.getPackageName()==null|| !(event.getPackageName().toString().equals("com.android.chrome"))){
-            return;
-        }
-
         final int eventType = event.getEventType();
-        Log.d(TAG, String.valueOf(eventType));
-        if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+/* automatic scrape implementation
+        // Filtering for window changes ensures we capture the DOM when the UI updates.
+        if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+                eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
             return;
         }
 
-        // Use the retry approach:
-        tryGetRootNode(0, targetWord);
+        if (debounceRunnable != null) {
+            debounceHandler.removeCallbacks(debounceRunnable);
+        }
+        debounceRunnable = () -> {
+            Log.d(TAG, "Screen stabilized. Starting scrape...");
+            tryGetRootNode(0);
+        };
+
+        debounceHandler.postDelayed(debounceRunnable, DEBOUNCE_DELAY_MS); */
     }
 
-    private void tryGetRootNode(final int attempt, final String targetWord) {
-        if (attempt > 5) {
-            Log.d(TAG, "Failed to get root after 5 attempts");
-            return;
-        }
+    private void tryGetRootNode(final int attempt) {
+        if (attempt > 5) return;
 
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode != null) {
-            Log.d(TAG, "Got rootNode on attempt " + attempt);
-            travelSearch(rootNode, targetWord);
+            JSONObject dom = serializeNodeToJson(rootNode);
+            if (dom != null) {
+                saveDomToFile(dom);
+            }
+            rootNode.recycle();
         } else {
-            Log.d(TAG, "Attempt " + attempt + " failed, retrying...");
-
-            AccessibilityServiceInfo info = getServiceInfo();
-            Log.d("debug", "Service info: " + (info != null ? "exists" : "null"));
-
+            // Retry logic handles cases where the window is still transitioning.
             new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() ->
-                    tryGetRootNode(attempt + 1, targetWord), 200);
+                    tryGetRootNode(attempt + 1), 200);
         }
     }
-
-    private void travelSearch(AccessibilityNodeInfo node, String searchCookie){
-        boolean found = travelSearchHelper(node, searchCookie);
-
-        if (found) {
-            Log.d(TAG, "Nasli jsme slovo.");
-            LogManager.INSTANCE.addLog(TAG, "Nasli jsme vase slovo.");
-
-            showNotification(searchCookie);
-        }
+//manual scrape implementation
+    public void captureCurrentWindow() {
+        Log.d(TAG, "Manual scrape initiated.");
+        tryGetRootNode(0);
     }
 
-    private void showNotification(String word) {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "cookie_alert")
-                .setSmallIcon(R.drawable.notification_icon)
-                .setContentTitle("Slovo " + word)
-                .setContentText("Nasli jsme vase slovo.")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setAutoCancel(true);
+    private JSONObject serializeNodeToJson(AccessibilityNodeInfo node) {
+        if (node == null) return null;
 
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        JSONObject json = new JSONObject();
+        try {
+            json.put("class", node.getClassName() != null ? node.getClassName().toString() : "unknown");
+            json.put("text", node.getText() != null ? node.getText().toString() : "");
+            json.put("resourceId", node.getViewIdResourceName() != null ? node.getViewIdResourceName() : "");
+            json.put("description", node.getContentDescription() != null ? node.getContentDescription().toString() : "");
 
-        if (ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-            notificationManager.notify(NOTIFICATION_ID, builder.build());
-        }
-    }
-
-    private boolean travelSearchHelper(AccessibilityNodeInfo node, String searchCookie){
-        if (node == null) {
-            return false;
-        }
-
-        if (node.getText() != null){
-            String nodeText = node.getText().toString().toLowerCase();
-            if (nodeText.contains(searchCookie.toLowerCase())){
-                return true;
+            JSONArray children = new JSONArray();
+            for (int i = 0; i < node.getChildCount(); i++) {
+                AccessibilityNodeInfo child = node.getChild(i);
+                if (child != null) {
+                    JSONObject childJson = serializeNodeToJson(child);
+                    if (childJson != null) {
+                        children.put(childJson);
+                    }
+                    child.recycle(); // Critical: prevent Memory Leaks
+                }
             }
+            json.put("children", children);
+        } catch (org.json.JSONException e) {
+            Log.e(TAG, "JSON Serialization error", e);
         }
-
-        for (int i = 0; i < node.getChildCount(); i++) {
-            AccessibilityNodeInfo child = node.getChild(i);
-            boolean found = travelSearchHelper(child, searchCookie);
-            if (child != null) {
-                child.recycle();
-            }
-            if (found) {
-                return true;
-            }
-        }
-
-        return false;
+        return json;
     }
 
-    private String getTargetWord() {
-        SharedPreferences sharedPrefs = getSharedPreferences("CookieMonsterPrefs", Context.MODE_PRIVATE);
-        return sharedPrefs.getString("target_word","cookie");
+    private void saveDomToFile(JSONObject json) {
+        String fileName = "dom_dump_" + System.currentTimeMillis() + ".json";
+        File file = new File(getExternalFilesDir(null), fileName);
+
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(json.toString(2));
+            Log.d(TAG, "DOM saved: " + file.getAbsolutePath());
+            LogManager.INSTANCE.addLog(TAG, "Saved DOM: " + fileName);
+        } catch (IOException | org.json.JSONException e) {
+            Log.e(TAG, "Failed to write JSON", e);
+        }
     }
 
     @Override
     public void onInterrupt() {
-        Log.d(TAG, "Cookie Monster byl prerusen.");
-        LogManager.INSTANCE.addLog(TAG, "Cookie Monster byl prerusen.");
+        if (debounceHandler != null && debounceRunnable != null) {
+            debounceHandler.removeCallbacks(debounceRunnable);
+        }
+        Log.d(TAG, "Cookie Monster was interrupted.");
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.d(TAG, "Cookie Monster byl uspan.");
-        LogManager.INSTANCE.addLog(TAG, "Cookie Monster byl uspan.");
+        instance = null; // Clear the static reference
+        Log.d(TAG, "Cookie Monster went to sleep.");
         return super.onUnbind(intent);
     }
 }

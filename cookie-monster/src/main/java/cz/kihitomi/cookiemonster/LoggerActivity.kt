@@ -1,27 +1,15 @@
 package cz.kihitomi.cookiemonster
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -33,39 +21,44 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.kihitomi.cookiemonster.theme.CookieMonsterTheme
+import kotlinx.coroutines.delay
+import cz.kihitomi.cookiemonster.LogManager.LogItem
 
 class ActivityLogger : ComponentActivity() {
 
-    private fun formatTimeStamp(timestamp: Long): String{
+    private fun formatTimeStamp(timestamp: Long): String {
         val sdf = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
         return sdf.format(java.util.Date(timestamp))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-
             var refreshTrigger by remember { mutableStateOf(0) }
+
+            // Re-fetch logs only when refreshTrigger changes
+            val logs by remember(refreshTrigger) {
+                mutableStateOf(LogManager.getAllLogs())
+            }
 
             LaunchedEffect(Unit) {
                 while (true) {
-                    kotlinx.coroutines.delay(2000)
+                    delay(2000)
                     refreshTrigger++
                 }
             }
+
             CookieMonsterTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            //.padding(innerPadding)
                             .background(
                                 brush = Brush.verticalGradient(
                                     colors = listOf(
-                                        Color(0xFFADD8E6),
-                                        Color(0xFFB8A4E8)
+                                        Color(0xFF1E3A5F), // Match MainActivity Dark Theme
+                                        Color(0xFF2E1A47)
                                     )
                                 )
                             )
@@ -76,26 +69,12 @@ class ActivityLogger : ComponentActivity() {
                                 .fillMaxSize()
                         ) {
                             Text(
-                                text = "LOGS",
+                                text = "SCRAPE TERMINAL",
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Black,
+                                color = Color.Cyan,
                                 modifier = Modifier
                                     .padding(16.dp)
-                                    .align(Alignment.CenterHorizontally)
-                            )
-
-                            val sharedPrefs = getSharedPreferences("CookieMonsterPrefs", Context.MODE_PRIVATE)
-                            val targetWord = sharedPrefs.getString("target_word", "cookie")
-
-                            Text(
-                                text = "Hledame slovo: $targetWord",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Light,
-                                color = Color.Black,
-                                modifier = Modifier
-                                    .padding(bottom = 8.dp)
-                                    .padding(horizontal = 16.dp)
                                     .align(Alignment.CenterHorizontally)
                             )
 
@@ -104,61 +83,59 @@ class ActivityLogger : ComponentActivity() {
                                     .weight(1f)
                                     .padding(horizontal = 16.dp)
                             ) {
-                                val logs = LogManager.getAllLogs()
-                                refreshTrigger
-
                                 items(logs.size) { index ->
                                     val log = logs[index]
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 8.dp)
-                                    ) {
-                                        Row {
-                                            Text(
-                                                text = "[${this@ActivityLogger.formatTimeStamp(log.timestamp)}]",
-                                                color = Color(0xFF0D47A1),
-                                                fontSize = 12.sp,
-                                                modifier = Modifier.padding(end = 8.dp)
-                                            )
-
-                                            Text(
-                                                text = "[${log.tag}]",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 14.sp
-                                            )
-                                        }
-                                        Text(
-                                            text = log.message,
-                                            fontSize = 12.sp
-                                        )
-                                    }
+                                    LogEntryRow(log)
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
-
                             Button(
-                                onClick = {
-                                    val intent =
-                                        Intent(this@ActivityLogger, MainActivity::class.java)
-                                    startActivity(intent)
-                                }, modifier = Modifier
+                                onClick = { finish() },
+                                modifier = Modifier
                                     .align(Alignment.CenterHorizontally)
                                     .padding(16.dp)
+                                    .fillMaxWidth()
                                     .height(56.dp)
                             ) {
-                                Text(
-                                    "GO BACK",
-                                    fontSize = 18.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Text("RETURN TO CONSOLE", fontFamily = FontFamily.Monospace)
                             }
                         }
                     }
                 }
             }
+        }
+    }
+
+    @Composable
+    private fun LogEntryRow(log: LogItem) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .background(Color.Black.copy(alpha = 0.3f))
+                .padding(8.dp)
+        ) {
+            Row {
+                Text(
+                    text = "[${formatTimeStamp(log.timestamp)}]",
+                    color = Color.Green,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                    text = log.tag,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
+            Text(
+                text = log.message,
+                color = Color.LightGray,
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace
+            )
         }
     }
 }

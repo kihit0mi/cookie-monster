@@ -1,19 +1,20 @@
 package cz.kihitomi.cookiemonster
 
 object LogManager {
-    private val logs = mutableListOf<LogEntry>()
+    private val logs = mutableListOf<LogItem>()
 
-    data class LogEntry(
+    data class LogItem(
         val tag: String,
         val message: String,
         val timestamp: Long = System.currentTimeMillis()
     )
 
     fun addLog(tag: String, message: String) {
-        logs.add(LogEntry(tag, message))
+        logs.add(LogItem(tag, message))
     }
 
-    fun getAllLogs(): List<LogEntry> {
+    fun getAllLogs(): List<LogItem> {
+        // Return a copy to maintain encapsulation
         return logs.toList().reversed()
     }
 

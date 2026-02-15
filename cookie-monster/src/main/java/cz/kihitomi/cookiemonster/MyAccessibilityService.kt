@@ -7,9 +7,14 @@ import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
+import android.graphics.Bitmap
+import android.view.Display
+import kotlinx.coroutines.suspendCancellableCoroutine
+import java.io.ByteArrayOutputStream
+import android.util.Base64
+import kotlin.coroutines.resume
 
 class MyAccessibilityService : AccessibilityService() {
 
@@ -41,7 +46,6 @@ class MyAccessibilityService : AccessibilityService() {
 
     override fun onUnbind(intent: Intent?): Boolean {
         instance = null
-        AndroidMcpServer.stop()
         Log.d(TAG, "Cookie Monster went to sleep.")
         return super.onUnbind(intent)
     }
@@ -69,7 +73,6 @@ class MyAccessibilityService : AccessibilityService() {
             val jsonString = jsonHandler.encodeToString(dataObject)
             saveJsonToFile(jsonString)
 
-            rootNode.recycle()
         } else {
             Handler(Looper.getMainLooper()).postDelayed({
                 tryGetRootNode(attempt + 1)
@@ -89,7 +92,6 @@ class MyAccessibilityService : AccessibilityService() {
             if (child != null) {
                 childNodes.add(mapNodeToData(child))
 
-                child.recycle()
             }
         }
 
@@ -120,24 +122,106 @@ class MyAccessibilityService : AccessibilityService() {
 
     fun clickByBounds(boundsString: String): String {
         try {
-            val parts = boundsString.split(",").map { it.toInt() }
-            if (parts.size != 4) return "Error: Bad bounds format."
+            val cleanBounds = boundsString.replace("[", "")
+                .replace("]", "")
+                .replace(" ", "")
+
+            val parts = cleanBounds.split(",").map { it.toInt() }
+
+            if (parts.size != 4) return "Error: Bad bounds format. Expected 4 integers."
 
             val x = (parts[0] + parts[2]) / 2f
             val y = (parts[1] + parts[3]) / 2f
 
             val path = android.graphics.Path()
-            path.moveTo(x,y)
+            path.moveTo(x, y)
+            path.lineTo(x, y)
+
+
 
             val gesture = android.accessibilityservice.GestureDescription.Builder()
-                .addStroke(android.accessibilityservice.GestureDescription.StrokeDescription(path, 0, 100))
+                .addStroke(android.accessibilityservice.GestureDescription.StrokeDescription(path, 0, 300))
                 .build()
 
             val dispatched = dispatchGesture(gesture, null, null)
+
             return if (dispatched) "Clicked on [$x, $y]" else "Error: Click failed."
 
         } catch (e: Exception) {
+            Log.d("clicking", "click failed")
             return "Error while clicking: ${e.message}"
+        }
+    }
+
+    suspend fun takeScreenshotBase64(): String {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) {
+            return "Error: Screenshot requires Android 11 (API 30) or higher."
+        }
+
+        return suspendCancellableCoroutine { continuation ->
+            val display = Display.DEFAULT_DISPLAY
+
+            takeScreenshot(display, applicationContext.mainExecutor,
+                object : TakeScreenshotCallback {
+                    override fun onSuccess(result: ScreenshotResult) {
+                        try {
+                            val hardwareBuffer = result.hardwareBuffer
+                            val colorSpace = result.colorSpace
+
+                            val bitmap = Bitmap.wrapHardwareBuffer(hardwareBuffer, colorSpace)
+
+                            if (bitmap == null) {
+                                continuation.resume("Error: Failed to create bitmap")
+                                return
+                            }
+
+                            val outputStream = ByteArrayOutputStream()
+                            val softwareBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, false)
+                            softwareBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+
+                            val imageBytes = outputStream.toByteArray()
+                            val base64String = Base64.encodeToString(imageBytes, Base64.NO_WRAP)
+
+                            hardwareBuffer.close()
+                            softwareBitmap.recycle()
+                            bitmap.recycle()
+
+                            continuation.resume(base64String)
+                        } catch (e: Exception) {
+                            continuation.resume("Error processing screenshot: ${e.message}")
+                        }
+                    }
+
+                    override fun onFailure(errorCode: Int) {
+                        continuation.resume("Error: Screenshot failed with code $errorCode")
+                    }
+                }
+            )
+        }
+    }
+
+    fun typeText(text: String): String {
+        val root = rootInActiveWindow ?: return "Error: Could not access screen content."
+
+        val focusedNode = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+
+        if (focusedNode == null) {
+            return "Error: No text field is focused. Please use 'tap_coordinates' to click the text box first."
+        }
+
+        val arguments = android.os.Bundle()
+        arguments.putCharSequence(
+            AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
+            text
+        )
+
+        val success = focusedNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+
+
+        return if (success) {
+            "Success: Typed '$text'"
+        } else {
+            "Error: Focused node rejected the text. It might not be editable."
         }
     }
 }

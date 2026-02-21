@@ -15,6 +15,7 @@ import android.view.Display
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.ByteArrayOutputStream
 import android.util.Base64
+import androidx.annotation.RequiresApi
 import kotlin.coroutines.resume
 
 
@@ -202,7 +203,10 @@ class MyAccessibilityService : AccessibilityService() {
         }
     }
 
-    fun typeText(text: String): String {
+    @RequiresApi(30)
+
+    fun typeText(text: String, enter: Boolean = false): String {
+
         val root = rootInActiveWindow ?: return "Error: Could not access screen content."
 
         val focusedNode = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
@@ -219,9 +223,15 @@ class MyAccessibilityService : AccessibilityService() {
 
         val success = focusedNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
 
+        if (enter) {
+            focusedNode.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)
+        }
 
-        return if (success) {
+
+        return if (success && !enter) {
             "Success: Typed '$text'"
+        } else if (success){
+            "Success: Typed '$text' and pressed enter."
         } else {
             "Error: Focused node rejected the text. It might not be editable."
         }
@@ -257,7 +267,7 @@ class MyAccessibilityService : AccessibilityService() {
 
         }
 
-        gestureBuilder.addStroke(GestureDescription.StrokeDescription(path as android.graphics.Path, 0L, 300L))
+        gestureBuilder.addStroke(GestureDescription.StrokeDescription(path, 0L, 300L))
         dispatchGesture(gestureBuilder.build(), null, null)
 
         return "Success: Scrolled $direction"

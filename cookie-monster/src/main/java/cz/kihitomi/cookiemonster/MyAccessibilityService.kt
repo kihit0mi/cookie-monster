@@ -15,10 +15,7 @@ import android.view.Display
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.ByteArrayOutputStream
 import android.util.Base64
-import android.util.DisplayMetrics
-import androidx.compose.ui.graphics.Path
 import kotlin.coroutines.resume
-import kotlin.io.path.Path
 
 
 class MyAccessibilityService : AccessibilityService() {
@@ -144,8 +141,8 @@ class MyAccessibilityService : AccessibilityService() {
 
 
 
-            val gesture = android.accessibilityservice.GestureDescription.Builder()
-                .addStroke(android.accessibilityservice.GestureDescription.StrokeDescription(path, 0, 300))
+            val gesture = GestureDescription.Builder()
+                .addStroke(GestureDescription.StrokeDescription(path, 0, 300))
                 .build()
 
             val dispatched = dispatchGesture(gesture, null, null)

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <accessibility-service
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:description="@string/accessibility_service_description"
     android:accessibilityEventTypes="typeAllMask"
     android:canRetrieveWindowContent="true"
@@ -10,4 +11,4 @@
     android:canRequestFilterKeyEvents="true"
     android:canPerformGestures="true"
     android:canTakeScreenshot="true"
-    />
+    tools:targetApi="30" />

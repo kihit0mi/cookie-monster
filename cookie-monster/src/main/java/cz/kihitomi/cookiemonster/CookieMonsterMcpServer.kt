@@ -114,10 +114,11 @@ class CookieMonsterMcpServer(private val accessibilityService: MyAccessibilitySe
                 }
 
                 val service = MyAccessibilityService.instance
-                val result = if (service != null) {
-                    service.clickByBounds(bounds)
-                } else {
-                    "Error: Service not running"
+                val result = try {
+                    service?.clickByBounds(bounds) ?: "Error: Service not running"
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    "Crash Error: ${e.message}"
                 }
 
                 CallToolResult(
@@ -148,10 +149,11 @@ class CookieMonsterMcpServer(private val accessibilityService: MyAccessibilitySe
 
                 val service = MyAccessibilityService.instance
 
-                val result = if (service != null) {
-                    service.typeText(text)
-                } else {
-                    "Error: Service not running"
+                val result = try {
+                    service?.typeText(text) ?: "Error: Service not running"
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    "Crash Error: ${e.message}"
                 }
 
                 CallToolResult(

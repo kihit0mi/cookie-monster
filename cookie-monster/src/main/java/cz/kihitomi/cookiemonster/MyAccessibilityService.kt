@@ -1,6 +1,7 @@
 package cz.kihitomi.cookiemonster
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.GestureDescription
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
@@ -14,7 +15,11 @@ import android.view.Display
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.ByteArrayOutputStream
 import android.util.Base64
+import android.util.DisplayMetrics
+import androidx.compose.ui.graphics.Path
 import kotlin.coroutines.resume
+import kotlin.io.path.Path
+
 
 class MyAccessibilityService : AccessibilityService() {
 
@@ -223,5 +228,41 @@ class MyAccessibilityService : AccessibilityService() {
         } else {
             "Error: Focused node rejected the text. It might not be editable."
         }
+    }
+
+    fun scroll(direction: String): String {
+        val displayMetrics = resources.displayMetrics
+        val middleHeight = (displayMetrics.heightPixels / 2).toFloat()
+        val middleWidth = (displayMetrics.widthPixels / 2).toFloat()
+
+
+
+        val gestureBuilder = GestureDescription.Builder()
+        val path = android.graphics.Path()
+
+        when (direction) {
+            "up" -> {
+                path.moveTo(middleWidth, middleHeight)
+                path.lineTo(middleWidth, middleHeight + 500f)}
+            "down" -> {
+                path.moveTo(middleWidth, middleHeight)
+                path.lineTo(middleWidth, middleHeight - 500f)}
+            "left" -> {
+                path.moveTo(middleWidth, middleHeight)
+                path.lineTo(middleWidth + 500f, middleHeight)}
+            "right" -> {
+                path.moveTo(middleWidth, middleHeight)
+                path.lineTo(middleWidth - 500f, middleHeight)}
+
+            else -> {
+                 return "Error: Invalid direction. Use 'up', 'down', 'left', or 'right'."
+                }
+
+        }
+
+        gestureBuilder.addStroke(GestureDescription.StrokeDescription(path as android.graphics.Path, 0L, 300L))
+        dispatchGesture(gestureBuilder.build(), null, null)
+
+        return "Success: Scrolled $direction"
     }
 }

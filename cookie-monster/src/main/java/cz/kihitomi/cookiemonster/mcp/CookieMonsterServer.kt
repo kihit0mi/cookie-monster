@@ -5,10 +5,10 @@ import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import android.util.Log
+import cz.kihitomi.cookiemonster.mcp.prompts.AgentPersonaPrompt
 import cz.kihitomi.cookiemonster.mcp.tools.ClickTool
 import cz.kihitomi.cookiemonster.mcp.tools.InputTextTool
-import cz.kihitomi.cookiemonster.mcp.tools.ScreenContentTool
-import cz.kihitomi.cookiemonster.mcp.tools.ScreenshotTool
+import cz.kihitomi.cookiemonster.mcp.tools.ObserveScreenTool
 import cz.kihitomi.cookiemonster.mcp.tools.ScrollTool
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -41,9 +41,7 @@ class CookieMonsterServer(private val actionHandler: AgentActionHandler) {
             )
         )
     ).apply {
-        ScreenContentTool(actionHandler).register(this)
-
-        ScreenshotTool(actionHandler).register(this)
+        ObserveScreenTool(actionHandler).register(this)
 
         ClickTool(actionHandler).register(this)
 

@@ -40,7 +40,6 @@ class ActivityLogger : ComponentActivity() {
         setContent {
             var refreshTrigger by remember { mutableStateOf(0) }
 
-            // Re-fetch logs only when refreshTrigger changes
             val logs by remember(refreshTrigger) {
                 mutableStateOf(LogManager.getAllLogs())
             }
@@ -60,7 +59,7 @@ class ActivityLogger : ComponentActivity() {
                             .background(
                                 brush = Brush.verticalGradient(
                                     colors = listOf(
-                                        Color(0xFF1E3A5F), // Match MainActivity Dark Theme
+                                        Color(0xFF1E3A5F),
                                         Color(0xFF2E1A47)
                                     )
                                 )

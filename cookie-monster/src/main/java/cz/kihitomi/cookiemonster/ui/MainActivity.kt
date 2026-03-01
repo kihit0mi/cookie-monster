@@ -10,13 +10,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -28,72 +27,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import cz.kihitomi.cookiemonster.theme.CookieMonsterTheme
-import kotlinx.coroutines.delay
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.lifecycleScope
-import cz.kihitomi.cookiemonster.logger.LogManager
+import cz.kihitomi.cookiemonster.theme.CookieMonsterTheme
 import cz.kihitomi.cookiemonster.accessibility.MyAccessibilityService
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-
-    private fun captureCurrentWindow() {
-
-        lifecycleScope.launch {
-            LogManager.addLog("System", "Scrape scheduled in 5s. Switch to the target app now!")
-
-            delay(5000) // 5 second countdown
-
-            val service = MyAccessibilityService.instance
-            if (service != null) {
-                service.captureCurrentWindow()
-                LogManager.addLog("System", "Scrape executed.")
-            } else {
-                LogManager.addLog("Error", "Accessibility Service not running!")
-            }
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // createNotificationChannel()
-
         setContent {
-            var promptInput by remember { mutableStateOf("") }
-            var showCheckmark by remember { mutableStateOf(false) }
-            var showAccessibilityDialog by remember { mutableStateOf(false) }
-
             val context = LocalContext.current
+            var isServiceRunning by remember { mutableStateOf(isAccessibilityServiceEnabled(context)) }
+            var showAccessibilityDialog by remember { mutableStateOf(!isServiceRunning) }
 
-            // Check service status on launch and return
-            LaunchedEffect(Unit) {
-                if (!isAccessibilityServiceEnabled(context)) {
-                    showAccessibilityDialog = true
-                }
-            }
-
+            // Re-check service status whenever the user comes back to the app from settings
             val lifecycleOwner = LocalLifecycleOwner.current
             DisposableEffect(lifecycleOwner) {
                 val observer = LifecycleEventObserver { _, event ->
                     if (event == Lifecycle.Event.ON_RESUME) {
-                        if (isAccessibilityServiceEnabled(context)) showAccessibilityDialog = false
+                        val isEnabled = isAccessibilityServiceEnabled(context)
+                        isServiceRunning = isEnabled
+                        if (isEnabled) showAccessibilityDialog = false
                     }
                 }
                 lifecycleOwner.lifecycle.addObserver(observer)
                 onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-            }
-
-            LaunchedEffect(showCheckmark) {
-                if (showCheckmark) {
-                    delay(2000)
-                    showCheckmark = false
-                }
             }
 
             CookieMonsterTheme {
@@ -122,65 +82,28 @@ class MainActivity : ComponentActivity() {
                             )
 
                             Text(
-                                text = "Agent Terminal & DOM Scraper",
+                                text = "MCP Server Host",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Light,
                                 color = Color.LightGray
                             )
 
-                            Spacer(modifier = Modifier.height(32.dp))
+                            Spacer(modifier = Modifier.height(64.dp))
 
-                            // EXPANDED INPUT FIELD
-                            OutlinedTextField(
-                                value = promptInput,
-                                onValueChange = { promptInput = it },
-                                label = { Text("Agent Prompt", color = Color.White) },
-                                placeholder = { Text("Enter commands for the agent...", color = Color.Gray) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(0.6f), // Takes up major screen real estate
-                                minLines = 5,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    focusedBorderColor = Color.Cyan,
-                                    unfocusedBorderColor = Color.White
-                                )
-                            )
+                            // SERVER STATUS CARD
+                            ServerStatusCard(isServiceRunning)
 
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Button(
-                                onClick = {
-                                    // Future: Send promptInput to MCP Server
-                                    LogManager.addLog("Command", "Sent: $promptInput")
-                                    promptInput = ""
-                                    showCheckmark = true
-                                    captureCurrentWindow()
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                if (showCheckmark) {
-                                    Icon(Icons.Filled.Check, contentDescription = null)
-                                    Spacer(Modifier.width(8.dp))
-                                }
-                                Text("SCRAPE THE SCREEN in 5 seconds")
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.Send,
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.weight(0.4f))
+                            Spacer(modifier = Modifier.weight(1f))
 
                             Button(
                                 onClick = {
                                     startActivity(Intent(this@MainActivity, ActivityLogger::class.java))
                                 },
-                                modifier = Modifier.height(56.dp).fillMaxWidth()
+                                modifier = Modifier
+                                    .height(56.dp)
+                                    .fillMaxWidth()
                             ) {
-                                Text("VIEW SCRAPE LOGS", fontFamily = FontFamily.Monospace)
+                                Text("VIEW AGENT LOGS", fontFamily = FontFamily.Monospace)
                             }
                         }
                     }
@@ -188,11 +111,10 @@ class MainActivity : ComponentActivity() {
                     if (showAccessibilityDialog) {
                         PermissionDialog(
                             title = "Enable Accessibility",
-                            message = "The Agent requires Accessibility permissions to analyze the screen and execute commands.",
+                            message = "The Cookie Monster Server requires Accessibility permissions to analyze the screen and execute agent commands.",
                             onDismiss = { showAccessibilityDialog = false },
                             onConfirm = {
                                 openAccessibilitySettings(context)
-                                showAccessibilityDialog = false
                             }
                         )
                     }
@@ -200,8 +122,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-
 
     private fun isAccessibilityServiceEnabled(context: Context): Boolean {
         val service = "${context.packageName}/${MyAccessibilityService::class.java.name}"
@@ -224,6 +144,46 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+fun ServerStatusCard(isRunning: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isRunning) Color(0xFF064E3B) else Color(0xFF7F1D1D)
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = if (isRunning) Icons.Filled.CheckCircle else Icons.Filled.Warning,
+                contentDescription = "Status Icon",
+                tint = if (isRunning) Color(0xFF34D399) else Color(0xFFFCA5A5),
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = if (isRunning) "SERVER ACTIVE" else "SERVER OFFLINE",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+                Text(
+                    text = if (isRunning) "Ready for MCP connections" else "Awaiting Accessibility Permission",
+                    color = Color.LightGray,
+                    fontSize = 12.sp
+                )
+            }
+
+
+        }
+    }
+}
+
+@Composable
 fun PermissionDialog(
     title: String,
     message: String,
@@ -231,6 +191,7 @@ fun PermissionDialog(
     onConfirm: () -> Unit
 ) {
     AlertDialog(
+
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -242,11 +203,13 @@ fun PermissionDialog(
         text = {
             Text(text = message)
         },
+
         confirmButton = {
             Button(onClick = onConfirm) {
                 Text("OPEN SETTINGS")
             }
         },
+
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("CANCEL")

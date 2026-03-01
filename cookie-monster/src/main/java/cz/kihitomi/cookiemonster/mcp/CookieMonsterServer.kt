@@ -33,6 +33,7 @@ class CookieMonsterServer(private val actionHandler: AgentActionHandler) {
         options = ServerOptions(
             capabilities = ServerCapabilities(
                 tools = ServerCapabilities.Tools(listChanged = true),
+                prompts = ServerCapabilities.Prompts(listChanged = false),
                 resources = ServerCapabilities.Resources(
                     listChanged = false,
                     subscribe = false
@@ -49,6 +50,8 @@ class CookieMonsterServer(private val actionHandler: AgentActionHandler) {
         InputTextTool(actionHandler).register(this)
 
         ScrollTool(actionHandler).register(this)
+
+        AgentPersonaPrompt().register(this)
     }
 
     fun start(port: Int = 8080) {

@@ -27,17 +27,31 @@ import kotlin.coroutines.resume
 
 class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
 
-    private var mcpServer: CookieMonsterServer? = null
+    // =========================================================================
+    // COMPANION OBJECT & STATE
+    // =========================================================================
+
     companion object {
         private const val TAG = "Cookie_Monster"
+        private const val SCROLL_DISTANCE_PX = 500f
+        private const val GESTURE_DURATION_MS = 300L
+        private const val MAX_ROOT_NODE_ATTEMPTS = 5
+        private const val ROOT_NODE_RETRY_DELAY_MS = 200L
+
+        //TODO: remove when done refactoring UI
         var instance: MyAccessibilityService? = null
     }
 
+    private var mcpServer: CookieMonsterServer? = null
 
     private val jsonHandler = Json {
         prettyPrint = true
         ignoreUnknownKeys = true
     }
+
+    // =========================================================================
+    // ANDROID LIFECYCLE OVERRIDES
+    // =========================================================================
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -48,6 +62,7 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
         LogManager.addLog(TAG, "Cookie Monster woke up!")
     }
 
+    //not used, but required by AccessibilityService
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
     }
 
@@ -61,10 +76,9 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
         return super.onUnbind(intent)
     }
 
-    fun captureCurrentWindow() {
-        Log.d(TAG, "Manual scrape initiated.")
-        tryGetRootNode(0)
-    }
+    // =========================================================================
+    // MCP TOOLS FUNCTIONS
+    // =========================================================================
 
     override fun getScreenContent(): String {
         val rootNode = rootInActiveWindow
@@ -73,62 +87,6 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
         }
         val dataObject = mapNodeToData(rootNode)
         return jsonHandler.encodeToString(dataObject)
-    }
-
-    private fun tryGetRootNode(attempt: Int) {
-        if (attempt > 5) return
-
-        val rootNode = rootInActiveWindow
-        if (rootNode != null) {
-            val dataObject = mapNodeToData(rootNode)
-            val jsonString = jsonHandler.encodeToString(dataObject)
-            saveJsonToFile(jsonString)
-
-        } else {
-            Handler(Looper.getMainLooper()).postDelayed({
-                tryGetRootNode(attempt + 1)
-            }, 200)
-        }
-    }
-
-    private fun mapNodeToData(node: AccessibilityNodeInfo): AccessibilityNode {
-        val childNodes = mutableListOf<AccessibilityNode>()
-
-        val rect = Rect()
-        node.getBoundsInScreen(rect)
-        val boundsString = "${rect.left},${rect.top},${rect.right},${rect.bottom}"
-
-        for (i in 0 until node.childCount) {
-            val child = node.getChild(i)
-            if (child != null) {
-                childNodes.add(mapNodeToData(child))
-
-            }
-        }
-
-        return AccessibilityNode(
-            className = node.className?.toString() ?: "unknown",
-            text = node.text?.toString(),
-            resourceId = node.viewIdResourceName,
-            description = node.contentDescription?.toString(),
-            clickable = node.isClickable,
-            bounds = boundsString,
-            children = childNodes
-        )
-    }
-
-    private fun saveJsonToFile(jsonString: String) {
-        val fileName = "dom_dump_${System.currentTimeMillis()}.json"
-        val file = File(getExternalFilesDir(null), fileName)
-
-        try {
-            // zapíšeme to do souboru
-            file.writeText(jsonString)
-            Log.d(TAG, "DOM saved: ${file.absolutePath}")
-            LogManager.addLog(TAG, "Saved DOM: $fileName")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to write JSON", e)
-        }
     }
 
     override fun clickByBounds(boundsString: String): String {
@@ -151,7 +109,7 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
 
 
             val gesture = GestureDescription.Builder()
-                .addStroke(GestureDescription.StrokeDescription(path, 0, 300))
+                .addStroke(GestureDescription.StrokeDescription(path, 0, GESTURE_DURATION_MS))
                 .build()
 
             val dispatched = dispatchGesture(gesture, null, null)
@@ -213,7 +171,6 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
     }
 
     @RequiresApi(30)
-
     override fun typeText(text: String, enter: Boolean): String {
 
         val root = rootInActiveWindow ?: return "Error: Could not access screen content."
@@ -251,34 +208,92 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
         val middleHeight = (displayMetrics.heightPixels / 2).toFloat()
         val middleWidth = (displayMetrics.widthPixels / 2).toFloat()
 
-
-
         val gestureBuilder = GestureDescription.Builder()
         val path = Path()
 
         when (direction) {
             "up" -> {
                 path.moveTo(middleWidth, middleHeight)
-                path.lineTo(middleWidth, middleHeight + 500f)}
+                path.lineTo(middleWidth, middleHeight + SCROLL_DISTANCE_PX)}
             "down" -> {
                 path.moveTo(middleWidth, middleHeight)
-                path.lineTo(middleWidth, middleHeight - 500f)}
+                path.lineTo(middleWidth, middleHeight - SCROLL_DISTANCE_PX)}
             "left" -> {
                 path.moveTo(middleWidth, middleHeight)
-                path.lineTo(middleWidth + 500f, middleHeight)}
+                path.lineTo(middleWidth + SCROLL_DISTANCE_PX, middleHeight)}
             "right" -> {
                 path.moveTo(middleWidth, middleHeight)
-                path.lineTo(middleWidth - 500f, middleHeight)}
+                path.lineTo(middleWidth - SCROLL_DISTANCE_PX, middleHeight)}
 
             else -> {
-                 return "Error: Invalid direction. Use 'up', 'down', 'left', or 'right'."
-                }
+                return "Error: Invalid direction. Use 'up', 'down', 'left', or 'right'."
+            }
 
         }
 
-        gestureBuilder.addStroke(GestureDescription.StrokeDescription(path, 0L, 300L))
+        gestureBuilder.addStroke(GestureDescription.StrokeDescription(path, 0L, GESTURE_DURATION_MS))
         dispatchGesture(gestureBuilder.build(), null, null)
 
         return "Success: Scrolled $direction"
+    }
+
+    // =========================================================================
+    // INTERNAL HELPER FUNCTIONS
+    // =========================================================================
+
+    private fun mapNodeToData(node: AccessibilityNodeInfo): AccessibilityNode {
+        val childNodes = mutableListOf<AccessibilityNode>()
+
+        val rect = Rect()
+        node.getBoundsInScreen(rect)
+        val boundsString = "${rect.left},${rect.top},${rect.right},${rect.bottom}"
+
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i)
+            if (child != null) {
+                childNodes.add(mapNodeToData(child))
+
+            }
+        }
+
+        return AccessibilityNode(
+            className = node.className?.toString() ?: "unknown",
+            text = node.text?.toString(),
+            resourceId = node.viewIdResourceName,
+            description = node.contentDescription?.toString(),
+            clickable = node.isClickable,
+            bounds = boundsString,
+            children = childNodes
+        )
+    }
+
+    private fun saveJsonToFile(jsonString: String) {
+        val fileName = "dom_dump_${System.currentTimeMillis()}.json"
+        val file = File(getExternalFilesDir(null), fileName)
+
+        try {
+            // zapíšeme to do souboru
+            file.writeText(jsonString)
+            Log.d(TAG, "DOM saved: ${file.absolutePath}")
+            LogManager.addLog(TAG, "Saved DOM: $fileName")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to write JSON", e)
+        }
+    }
+
+    private fun tryGetRootNode(attempt: Int) {
+        if (attempt > MAX_ROOT_NODE_ATTEMPTS) return
+
+        val rootNode = rootInActiveWindow
+        if (rootNode != null) {
+            val dataObject = mapNodeToData(rootNode)
+            val jsonString = jsonHandler.encodeToString(dataObject)
+            saveJsonToFile(jsonString)
+
+        } else {
+            Handler(Looper.getMainLooper()).postDelayed({
+                tryGetRootNode(attempt + 1)
+            }, ROOT_NODE_RETRY_DELAY_MS)
+        }
     }
 }

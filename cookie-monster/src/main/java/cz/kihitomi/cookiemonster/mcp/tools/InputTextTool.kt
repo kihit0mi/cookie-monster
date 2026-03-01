@@ -8,7 +8,7 @@ import cz.kihitomi.cookiemonster.mcp.AgentActionHandler
 class InputTextTool(private val actionHandler: AgentActionHandler) {
     private val definition = Tool(
         name = "input_text",
-        description = "Enters text into currently focused input field. You must click on the input field first, using tap_coordinates. You have also OPTIONAL power to press enter after typing in the text (use when typing in a search field for example).",
+        description = "Types text into the currently focused input field. You MUST use the click tool on the text field before calling this. The enter parameter (boolean) determines if the physical 'Enter/Return' key is pressed after typing. Set enter to true when submitting a search or sending a message.",
         inputSchema = ToolSchema(
             properties = buildJsonObject {
                 put("text", buildJsonObject {

@@ -8,12 +8,18 @@ import cz.kihitomi.cookiemonster.mcp.AgentActionHandler
 class ClickTool(private val actionHandler: AgentActionHandler) {
     private val definition = Tool(
         name = "tap_coordinates",
-        description = "Taps on the screen at the specified bounding box center.",
+        description = """
+                Taps a specific element on the screen. Primary Method: Pass the exact 4-number 
+                bounds string from the JSON DOM (e.g., '100,200,300,400'). 
+                Fallback Method: If the element is missing from the DOM (like in a web browser), 
+                look at the screenshot, estimate the X,Y center point of the target, 
+                and pass those 2 numbers (e.g., '150,250').
+                """,
         inputSchema = ToolSchema(
             properties = buildJsonObject {
                 putJsonObject("bounds") {
                     put("type", "string")
-                    put("description", "The bounding box string (e.g., '140,500,280,600')")
+                    put("description", "The bounding box string (e.g., '140,500,280,600'), or the X,Y estimate from screenshot.")
                 }
             }
         )

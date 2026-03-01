@@ -8,7 +8,7 @@ import cz.kihitomi.cookiemonster.mcp.AgentActionHandler
 class ScrollTool(private val actionHandler: AgentActionHandler) {
     private val definition = Tool(
         name = "scroll_in_direction",
-        description = "Scrolls the screen in the specified direction - 'up', 'down', 'left' or 'right' - by 500 pixels.",
+        description = "Scrolls the screen by 500 pixels. Valid directions are 'up', 'down', 'left', or 'right'. CRITICAL: After scrolling, the UI changes. You MUST call 'observe_screen' again to get the updated coordinates before trying to click anything.",
         inputSchema = ToolSchema(
             required = listOf("direction"),
             properties = buildJsonObject {

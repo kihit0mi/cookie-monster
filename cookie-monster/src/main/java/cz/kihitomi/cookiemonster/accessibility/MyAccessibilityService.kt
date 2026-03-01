@@ -193,7 +193,7 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
 
         return if (success && !enter) {
             "Success: Typed '$text'"
-        } else if (success){
+        } else if (success) {
             "Success: Typed '$text' and pressed enter."
         } else {
             "Error: Focused node rejected the text. It might not be editable."
@@ -211,16 +211,23 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
         when (direction) {
             "up" -> {
                 path.moveTo(middleWidth, middleHeight)
-                path.lineTo(middleWidth, middleHeight + SCROLL_DISTANCE_PX)}
+                path.lineTo(middleWidth, middleHeight + SCROLL_DISTANCE_PX)
+            }
+
             "down" -> {
                 path.moveTo(middleWidth, middleHeight)
-                path.lineTo(middleWidth, middleHeight - SCROLL_DISTANCE_PX)}
+                path.lineTo(middleWidth, middleHeight - SCROLL_DISTANCE_PX)
+            }
+
             "left" -> {
                 path.moveTo(middleWidth, middleHeight)
-                path.lineTo(middleWidth + SCROLL_DISTANCE_PX, middleHeight)}
+                path.lineTo(middleWidth + SCROLL_DISTANCE_PX, middleHeight)
+            }
+
             "right" -> {
                 path.moveTo(middleWidth, middleHeight)
-                path.lineTo(middleWidth - SCROLL_DISTANCE_PX, middleHeight)}
+                path.lineTo(middleWidth - SCROLL_DISTANCE_PX, middleHeight)
+            }
 
             else -> {
                 return "Error: Invalid direction. Use 'up', 'down', 'left', or 'right'."
@@ -228,7 +235,13 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
 
         }
 
-        gestureBuilder.addStroke(GestureDescription.StrokeDescription(path, 0L, GESTURE_DURATION_MS))
+        gestureBuilder.addStroke(
+            GestureDescription.StrokeDescription(
+                path,
+                0L,
+                GESTURE_DURATION_MS
+            )
+        )
         dispatchGesture(gestureBuilder.build(), null, null)
 
         return "Success: Scrolled $direction"

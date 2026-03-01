@@ -2,9 +2,14 @@ package cz.kihitomi.cookiemonster.mcp.tools
 
 import cz.kihitomi.cookiemonster.mcp.AgentActionHandler
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import io.modelcontextprotocol.kotlin.sdk.types.*
-import kotlinx.serialization.json.buildJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.ContentBlock
+import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.buildJsonObject
 
 class ObserveScreenTool(private val actionHandler: AgentActionHandler) {
 
@@ -16,6 +21,7 @@ class ObserveScreenTool(private val actionHandler: AgentActionHandler) {
             required = emptyList()
         )
     )
+
     @OptIn(ExperimentalSerializationApi::class)
     fun register(server: Server) {
         server.addTool(definition) { _ ->

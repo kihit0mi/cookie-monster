@@ -1,9 +1,5 @@
 package cz.kihitomi.cookiemonster.mcp
 
-import io.modelcontextprotocol.kotlin.sdk.server.Server
-import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.types.Implementation
-import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import android.util.Log
 import cz.kihitomi.cookiemonster.mcp.prompts.AgentPersonaPrompt
 import cz.kihitomi.cookiemonster.mcp.tools.ClickTool
@@ -21,7 +17,11 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 
 class CookieMonsterServer(private val actionHandler: AgentActionHandler) {
 

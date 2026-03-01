@@ -1,9 +1,14 @@
 package cz.kihitomi.cookiemonster.mcp.tools
 
-import io.modelcontextprotocol.kotlin.sdk.server.Server
-import io.modelcontextprotocol.kotlin.sdk.types.*
-import kotlinx.serialization.json.*
 import cz.kihitomi.cookiemonster.mcp.AgentActionHandler
+import io.modelcontextprotocol.kotlin.sdk.server.Server
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 
 class ClickTool(private val actionHandler: AgentActionHandler) {
     private val definition = Tool(
@@ -19,7 +24,10 @@ class ClickTool(private val actionHandler: AgentActionHandler) {
             properties = buildJsonObject {
                 putJsonObject("bounds") {
                     put("type", "string")
-                    put("description", "The bounding box string (e.g., '140,500,280,600'), or the X,Y estimate from screenshot.")
+                    put(
+                        "description",
+                        "The bounding box string (e.g., '140,500,280,600'), or the X,Y estimate from screenshot."
+                    )
                 }
             }
         )

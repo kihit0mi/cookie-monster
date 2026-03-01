@@ -16,18 +16,18 @@ import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.annotation.RequiresApi
-import cz.kihitomi.cookiemonster.accessibility.AccessibilityNode
 import cz.kihitomi.cookiemonster.logger.LogManager
-import cz.kihitomi.cookiemonster.mcp.ActionHandler
-import cz.kihitomi.cookiemonster.mcp.AndroidMcpServer
+import cz.kihitomi.cookiemonster.mcp.AgentActionHandler
+import cz.kihitomi.cookiemonster.mcp.CookieMonsterServer
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlin.coroutines.resume
 
-class MyAccessibilityService : AccessibilityService(), ActionHandler {
+class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
 
+    private var mcpServer: CookieMonsterServer? = null
     companion object {
         private const val TAG = "Cookie_Monster"
         var instance: MyAccessibilityService? = null
@@ -41,10 +41,11 @@ class MyAccessibilityService : AccessibilityService(), ActionHandler {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        instance = this
+        mcpServer = CookieMonsterServer(actionHandler = this)
+        mcpServer?.start(8080)
+        instance = this //TODO: remove when done refactoring UI
         Log.d(TAG, "Cookie Monster woke up.")
         LogManager.addLog(TAG, "Cookie Monster woke up!")
-        AndroidMcpServer.start(8080)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {

@@ -1,19 +1,18 @@
-package cz.kihitomi.cookiemonster
+package cz.kihitomi.cookiemonster.mcp
 
+import cz.kihitomi.cookiemonster.accessibility.MyAccessibilityService
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
-import io.modelcontextprotocol.kotlin.sdk.types.ImageContent
-
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-
 
 class CookieMonsterMcpServer(private val accessibilityService: MyAccessibilityService) {
 
@@ -46,7 +45,7 @@ class CookieMonsterMcpServer(private val accessibilityService: MyAccessibilitySe
             )
 
             server.addTool(screenTool) { _ ->
-                val content = MyAccessibilityService.instance?.getScreenContent()
+                val content = MyAccessibilityService.Companion.instance?.getScreenContent()
                 CallToolResult(
                     content = listOf(TextContent(text = content.toString()))
                 )
@@ -62,7 +61,7 @@ class CookieMonsterMcpServer(private val accessibilityService: MyAccessibilitySe
             )
 
             server.addTool(screenshotTool) { _ ->
-                val service = MyAccessibilityService.instance
+                val service = MyAccessibilityService.Companion.instance
 
                 if (service == null) {
                     return@addTool CallToolResult(
@@ -113,7 +112,7 @@ class CookieMonsterMcpServer(private val accessibilityService: MyAccessibilitySe
                     throw IllegalArgumentException("Missing 'bounds' parameter")
                 }
 
-                val service = MyAccessibilityService.instance
+                val service = MyAccessibilityService.Companion.instance
                 val result = try {
                     service?.clickByBounds(bounds) ?: "Error: Service not running"
                 } catch (e: Exception) {
@@ -153,7 +152,7 @@ class CookieMonsterMcpServer(private val accessibilityService: MyAccessibilitySe
 
                 val enter = arguments["enter"]?.toString()?.toBoolean() ?: false
 
-                val service = MyAccessibilityService.instance
+                val service = MyAccessibilityService.Companion.instance
 
                 val result = try {
                     service?.typeText(text, enter) ?: "Error: Service not running"
@@ -175,7 +174,10 @@ class CookieMonsterMcpServer(private val accessibilityService: MyAccessibilitySe
                     properties = buildJsonObject {
                         putJsonObject("direction") {
                             put("type", "string")
-                            put("description", "The direction where you want to scroll - 'up', 'down', 'left' or 'right'")
+                            put(
+                                "description",
+                                "The direction where you want to scroll - 'up', 'down', 'left' or 'right'"
+                            )
                         }
                     }
                 )
@@ -189,7 +191,7 @@ class CookieMonsterMcpServer(private val accessibilityService: MyAccessibilitySe
                 val direction = arguments["direction"]?.toString()?.trim('"')
                     ?: throw IllegalArgumentException("Missing 'direction' parameter.")
 
-                val service = MyAccessibilityService.instance
+                val service = MyAccessibilityService.Companion.instance
 
                 val result = try {
                     service?.scroll(direction) ?: "Error: Service not running"
@@ -207,6 +209,3 @@ class CookieMonsterMcpServer(private val accessibilityService: MyAccessibilitySe
         }
     }
 }
-
-
-

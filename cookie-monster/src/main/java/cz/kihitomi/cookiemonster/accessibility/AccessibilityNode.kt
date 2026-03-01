@@ -1,4 +1,4 @@
-package cz.kihitomi.cookiemonster
+package cz.kihitomi.cookiemonster.accessibility
 
 import kotlinx.serialization.Serializable
 

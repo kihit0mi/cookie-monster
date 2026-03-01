@@ -1,25 +1,32 @@
-package cz.kihitomi.cookiemonster
+package cz.kihitomi.cookiemonster.accessibility
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Path
+import android.graphics.Rect
+import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
 import android.util.Log
+import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import kotlinx.serialization.json.Json
-import java.io.File
-import android.graphics.Bitmap
-import android.view.Display
-import kotlinx.coroutines.suspendCancellableCoroutine
-import java.io.ByteArrayOutputStream
-import android.util.Base64
 import androidx.annotation.RequiresApi
+import cz.kihitomi.cookiemonster.accessibility.AccessibilityNode
+import cz.kihitomi.cookiemonster.logger.LogManager
+import cz.kihitomi.cookiemonster.mcp.ActionHandler
+import cz.kihitomi.cookiemonster.mcp.AndroidMcpServer
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.serialization.json.Json
+import java.io.ByteArrayOutputStream
+import java.io.File
 import kotlin.coroutines.resume
 
-
-class MyAccessibilityService : AccessibilityService() {
+class MyAccessibilityService : AccessibilityService(), ActionHandler {
 
     companion object {
         private const val TAG = "Cookie_Monster"
@@ -58,7 +65,7 @@ class MyAccessibilityService : AccessibilityService() {
         tryGetRootNode(0)
     }
 
-    fun getScreenContent(): String {
+    override fun getScreenContent(): String {
         val rootNode = rootInActiveWindow
         if (rootNode == null) {
             return "Root node is null"
@@ -86,7 +93,7 @@ class MyAccessibilityService : AccessibilityService() {
     private fun mapNodeToData(node: AccessibilityNodeInfo): AccessibilityNode {
         val childNodes = mutableListOf<AccessibilityNode>()
 
-        val rect = android.graphics.Rect()
+        val rect = Rect()
         node.getBoundsInScreen(rect)
         val boundsString = "${rect.left},${rect.top},${rect.right},${rect.bottom}"
 
@@ -123,7 +130,7 @@ class MyAccessibilityService : AccessibilityService() {
         }
     }
 
-    fun clickByBounds(boundsString: String): String {
+    override fun clickByBounds(boundsString: String): String {
         try {
             val cleanBounds = boundsString.replace("[", "")
                 .replace("]", "")
@@ -136,7 +143,7 @@ class MyAccessibilityService : AccessibilityService() {
             val x = (parts[0] + parts[2]) / 2f
             val y = (parts[1] + parts[3]) / 2f
 
-            val path = android.graphics.Path()
+            val path = Path()
             path.moveTo(x, y)
             path.lineTo(x, y)
 
@@ -156,15 +163,16 @@ class MyAccessibilityService : AccessibilityService() {
         }
     }
 
-    suspend fun takeScreenshotBase64(): String {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) {
+    override suspend fun takeScreenshotBase64(): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             return "Error: Screenshot requires Android 11 (API 30) or higher."
         }
 
         return suspendCancellableCoroutine { continuation ->
             val display = Display.DEFAULT_DISPLAY
 
-            takeScreenshot(display, applicationContext.mainExecutor,
+            takeScreenshot(
+                display, applicationContext.mainExecutor,
                 object : TakeScreenshotCallback {
                     override fun onSuccess(result: ScreenshotResult) {
                         try {
@@ -205,7 +213,7 @@ class MyAccessibilityService : AccessibilityService() {
 
     @RequiresApi(30)
 
-    fun typeText(text: String, enter: Boolean = false): String {
+    override fun typeText(text: String, enter: Boolean): String {
 
         val root = rootInActiveWindow ?: return "Error: Could not access screen content."
 
@@ -215,7 +223,7 @@ class MyAccessibilityService : AccessibilityService() {
             return "Error: No text field is focused. Please use 'tap_coordinates' to click the text box first."
         }
 
-        val arguments = android.os.Bundle()
+        val arguments = Bundle()
         arguments.putCharSequence(
             AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
             text
@@ -237,7 +245,7 @@ class MyAccessibilityService : AccessibilityService() {
         }
     }
 
-    fun scroll(direction: String): String {
+    override fun scroll(direction: String): String {
         val displayMetrics = resources.displayMetrics
         val middleHeight = (displayMetrics.heightPixels / 2).toFloat()
         val middleWidth = (displayMetrics.widthPixels / 2).toFloat()
@@ -245,7 +253,7 @@ class MyAccessibilityService : AccessibilityService() {
 
 
         val gestureBuilder = GestureDescription.Builder()
-        val path = android.graphics.Path()
+        val path = Path()
 
         when (direction) {
             "up" -> {

@@ -1,4 +1,4 @@
-package cz.kihitomi.cookiemonster
+package cz.kihitomi.cookiemonster.logger
 
 object LogManager {
     private val logs = mutableListOf<LogItem>()

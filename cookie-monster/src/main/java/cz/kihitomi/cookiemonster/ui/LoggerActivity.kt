@@ -1,6 +1,5 @@
-package cz.kihitomi.cookiemonster
+package cz.kihitomi.cookiemonster.ui
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,15 +19,19 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cz.kihitomi.cookiemonster.logger.LogManager
 import cz.kihitomi.cookiemonster.theme.CookieMonsterTheme
 import kotlinx.coroutines.delay
-import cz.kihitomi.cookiemonster.LogManager.LogItem
+import cz.kihitomi.cookiemonster.logger.LogManager.LogItem
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ActivityLogger : ComponentActivity() {
 
     private fun formatTimeStamp(timestamp: Long): String {
-        val sdf = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
-        return sdf.format(java.util.Date(timestamp))
+        val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        return sdf.format(Date(timestamp))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

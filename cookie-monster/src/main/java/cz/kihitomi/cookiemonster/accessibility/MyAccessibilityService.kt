@@ -91,22 +91,19 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
 
     override fun clickByBounds(boundsString: String): String {
         try {
-            val cleanBounds = boundsString.replace("[", "")
-                .replace("]", "")
-                .replace(" ", "")
-
+            val cleanBounds = boundsString.replace("[", "").replace("]", "").replace(" ", "")
             val parts = cleanBounds.split(",").map { it.toInt() }
 
-            if (parts.size != 4) return "Error: Bad bounds format. Expected 4 integers."
+            val (x, y) = when (parts.size) {
+                4 -> Pair((parts[0] + parts[2]) / 2f, (parts[1] + parts[3]) / 2f)
+                2 -> Pair(parts[0].toFloat(), parts[1].toFloat())
+                else -> return "Error: Bad format. Expected either 4 integers (bounds) or 2 integers (x,y)."
+            }
 
-            val x = (parts[0] + parts[2]) / 2f
-            val y = (parts[1] + parts[3]) / 2f
-
-            val path = Path()
-            path.moveTo(x, y)
-            path.lineTo(x, y)
-
-
+            val path = Path().apply {
+                moveTo(x, y)
+                lineTo(x, y)
+            }
 
             val gesture = GestureDescription.Builder()
                 .addStroke(GestureDescription.StrokeDescription(path, 0, GESTURE_DURATION_MS))

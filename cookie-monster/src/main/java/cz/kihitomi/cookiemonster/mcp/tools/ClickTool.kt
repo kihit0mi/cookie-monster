@@ -10,9 +10,15 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
+/**
+ * Tool, as defined by MCP protocol, with all the required properties.
+ * Describes what it does to an agent accessing it, and calls for an OS action, separate from the server.
+ */
 class ClickTool(private val actionHandler: AgentActionHandler) {
     private val definition = Tool(
         name = "tap_coordinates",
+        // The description AI reads and decides what tool is it going to use.
+        // Changing this will drastically impact agent performance and behavior.
         description = """
                 Taps a specific element on the screen. Primary Method: Pass the exact 4-number 
                 bounds string from the JSON DOM (e.g., '100,200,300,400'). 
@@ -21,6 +27,7 @@ class ClickTool(private val actionHandler: AgentActionHandler) {
                 and pass those 2 numbers (e.g., '150,250').
                 """,
         inputSchema = ToolSchema(
+            required = listOf("bounds"),
             properties = buildJsonObject {
                 putJsonObject("bounds") {
                     put("type", "string")
@@ -33,6 +40,9 @@ class ClickTool(private val actionHandler: AgentActionHandler) {
         )
     )
 
+    /**
+     * Mounts the tool onto the active Ktor session.
+     */
     fun register(server: Server) {
         server.addTool(definition) { request ->
             val arguments = request.arguments as? Map<String, *>
@@ -41,6 +51,7 @@ class ClickTool(private val actionHandler: AgentActionHandler) {
             val boundsRaw = arguments["bounds"]
                 ?: throw IllegalArgumentException("Missing 'bounds' parameter")
 
+            // Removes the JSON artifacts.
             val bounds = boundsRaw.toString().replace("\"", "").trim()
 
             if (bounds.isBlank() || bounds == "null") {

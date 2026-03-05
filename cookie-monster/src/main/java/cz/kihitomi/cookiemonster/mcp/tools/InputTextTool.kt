@@ -9,10 +9,20 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
+/**
+ * Tool, as defined by MCP protocol, with all the required properties.
+ * Describes what it does to an agent accessing it, and calls for an OS action, separate from the server.
+ */
 class InputTextTool(private val actionHandler: AgentActionHandler) {
     private val definition = Tool(
         name = "input_text",
-        description = "Types text into the currently focused input field. You MUST use the click tool on the text field before calling this. The enter parameter (boolean) determines if the physical 'Enter/Return' key is pressed after typing. Set enter to true when submitting a search or sending a message.",
+        // The description AI reads and decides what tool is it going to use.
+        // Changing this will drastically impact agent performance and behavior.
+        description = """
+            Types text into the currently focused input field. You MUST use the click tool on the text field before calling this. 
+            The enter parameter (boolean) determines if the physical 'Enter/Return' key is pressed after typing. 
+            Set enter to true when submitting a search or sending a message.
+            """,
         inputSchema = ToolSchema(
             properties = buildJsonObject {
                 put("text", buildJsonObject {
@@ -28,6 +38,9 @@ class InputTextTool(private val actionHandler: AgentActionHandler) {
         )
     )
 
+    /**
+     * Mounts the tool onto the active Ktor session.
+     */
     fun register(server: Server) {
         server.addTool(definition) { request ->
             val arguments = request.arguments as? Map<String, *>

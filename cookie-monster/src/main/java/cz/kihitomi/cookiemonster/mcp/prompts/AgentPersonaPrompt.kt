@@ -7,14 +7,23 @@ import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 
+/**
+ * We host this persona on the server instead of typing it into client so the behavior is unchanged,
+ * plus it's easier for the user to just connect without having to explain to the LLM what to do.
+ */
 class AgentPersonaPrompt {
 
+    // MCP Prompts are pre-configured template requested by the client before the conversation starts
     private val definition = Prompt(
         name = "android_agent_persona",
         description = "Standard operating procedures and system instructions for the Android autonomous agent.",
         arguments = emptyList()
     )
 
+    /**
+     * Injects the ReAct operating loop and standard operating procedures directly into the
+     * LLM's context window when the client requests the "android_agent_persona" prompt.
+     */
     fun register(server: Server) {
         server.addPrompt(definition) { _ ->
             GetPromptResult(

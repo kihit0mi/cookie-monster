@@ -11,10 +11,16 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.buildJsonObject
 
+/**
+ * Tool, as defined by MCP protocol, with all the required properties.
+ * Describes what it does to an agent accessing it, and calls for an OS action, separate from the server.
+ */
 class ObserveScreenTool(private val actionHandler: AgentActionHandler) {
 
     private val definition = Tool(
         name = "observe_screen",
+        // The description AI reads and decides what tool is it going to use.
+        // Changing this will drastically impact agent performance and behavior.
         description = "Captures the current state of the device screen. Returns BOTH the structural JSON DOM tree (for exact coordinates and text) and a visual screenshot (for graphical context). ALWAYS use this as your primary way to see.",
         inputSchema = ToolSchema(
             properties = buildJsonObject {},
@@ -22,6 +28,10 @@ class ObserveScreenTool(private val actionHandler: AgentActionHandler) {
         )
     )
 
+    /**
+     * Mounts the tool onto the active Ktor session.
+     * Opts into experimental serialization APIs required by the MCP SDK to properly encode multimodal payloads (like byte arrays for images) into JSON.
+     */
     @OptIn(ExperimentalSerializationApi::class)
     fun register(server: Server) {
         server.addTool(definition) { _ ->

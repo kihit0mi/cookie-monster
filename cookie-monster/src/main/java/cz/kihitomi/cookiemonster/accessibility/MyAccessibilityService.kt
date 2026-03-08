@@ -2,14 +2,13 @@ package cz.kihitomi.cookiemonster.accessibility
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Path
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import android.view.Display
@@ -22,9 +21,13 @@ import cz.kihitomi.cookiemonster.mcp.CookieMonsterServer
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
-import java.io.File
 import kotlin.coroutines.resume
 
+/**
+ * The engine of the app, where we actually do all the things LLM needs to autonymously control the phone.
+ * It is decoupled from the server side completely, the functions here are  called by our bridge - AgentActionHandler.
+ */
+@SuppressLint("AccessibilityPolicy")
 class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
 
     // =========================================================================
@@ -35,11 +38,6 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
         private const val TAG = "Cookie_Monster"
         private const val SCROLL_DISTANCE_PX = 500f
         private const val GESTURE_DURATION_MS = 300L
-        private const val MAX_ROOT_NODE_ATTEMPTS = 5
-        private const val ROOT_NODE_RETRY_DELAY_MS = 200L
-
-        //TODO: remove when done refactoring UI
-        var instance: MyAccessibilityService? = null
     }
 
     private var mcpServer: CookieMonsterServer? = null
@@ -52,12 +50,15 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
     // =========================================================================
     // ANDROID LIFECYCLE OVERRIDES
     // =========================================================================
-
+    /**
+     * Here is where the server is actually started, the moment the user allows accessibility permissions.
+     * We do not want to manually start it, the app is just the server in the users eyes,
+     * so it makes no sense to start one without the other.
+     */
     override fun onServiceConnected() {
         super.onServiceConnected()
         mcpServer = CookieMonsterServer(actionHandler = this)
         mcpServer?.start(8080)
-        instance = this //TODO: remove when done refactoring UI
         Log.d(TAG, "Cookie Monster woke up.")
         LogManager.addLog(TAG, "Cookie Monster woke up!")
     }
@@ -71,7 +72,6 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        instance = null
         Log.d(TAG, "Cookie Monster went to sleep.")
         return super.onUnbind(intent)
     }
@@ -81,17 +81,23 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
     // =========================================================================
 
     override fun getScreenContent(): String {
-        val rootNode = rootInActiveWindow
-        if (rootNode == null) {
-            return "Root node is null"
-        }
+        val rootNode = rootInActiveWindow ?: return "Root node is null"
+
         val dataObject = mapNodeToData(rootNode)
+
+        LogManager.addLog(TAG, "Observe Tool was used.")
+
         return jsonHandler.encodeToString(dataObject)
     }
 
+    /**
+     * Allows two different sets of coordinates, for greater flexibility - 4 integers in case of successful DOM scrape,
+     * provided directly by Android, or 2 integers in case of LLM guessing based on a screenshot.
+     */
     override fun clickByBounds(boundsString: String): String {
         try {
-            val cleanBounds = boundsString.replace("[", "").replace("]", "").replace(" ", "")
+            // Clean up coordinates we get from LLM, we cannot be sure how they are formatted
+            val cleanBounds = boundsString.replace("[", "").replace("]", "").replace(" ", "").replace("(", "").replace(")", "")
             val parts = cleanBounds.split(",").map { it.toInt() }
 
             val (x, y) = when (parts.size) {
@@ -106,10 +112,13 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
             }
 
             val gesture = GestureDescription.Builder()
-                .addStroke(GestureDescription.StrokeDescription(path, 0, GESTURE_DURATION_MS))
+                .addStroke(GestureDescription.StrokeDescription(path, 0, GESTURE_DURATION_MS)) //Android might not register the tap properly if too short or long
                 .build()
 
             val dispatched = dispatchGesture(gesture, null, null)
+
+            if (dispatched) LogManager.addLog(TAG, "Click Tool was used.")
+
 
             return if (dispatched) "Clicked on [$x, $y]" else "Error: Click failed."
 
@@ -119,6 +128,10 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
         }
     }
 
+    /**
+     * Requires Android 11 (API 30) or higher to use takeScreenshot(). For lower versions, we would need to use
+     * MediaProjection API, which pulls out consent form every time it's called, thus slowing the whole process down a lot.
+     */
     override suspend fun takeScreenshotBase64(): String {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             return "Error: Screenshot requires Android 11 (API 30) or higher."
@@ -149,6 +162,7 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
                             val imageBytes = outputStream.toByteArray()
                             val base64String = Base64.encodeToString(imageBytes, Base64.NO_WRAP)
 
+                            // free the the memory explicitly, waiting for garbage collection would cause OOM crashes
                             hardwareBuffer.close()
                             softwareBitmap.recycle()
                             bitmap.recycle()
@@ -167,6 +181,10 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
         }
     }
 
+    /**
+     * ACTION_IME_ENTER requires Android 11 (API 30) or higher.
+     * This functions only work when an input field is selected, that's why we have to ensure it's clicked first.
+     */
     @RequiresApi(30)
     override fun typeText(text: String, enter: Boolean): String {
 
@@ -190,6 +208,7 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
             focusedNode.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)
         }
 
+        if (success) LogManager.addLog(TAG, "Input Tool was used.")
 
         return if (success && !enter) {
             "Success: Typed '$text'"
@@ -202,6 +221,7 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
 
     override fun scroll(direction: String): String {
         val displayMetrics = resources.displayMetrics
+        // starting the scroll in the middle of the screen for safety - the least chance we run out of space
         val middleHeight = (displayMetrics.heightPixels / 2).toFloat()
         val middleWidth = (displayMetrics.widthPixels / 2).toFloat()
 
@@ -244,13 +264,18 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
         )
         dispatchGesture(gestureBuilder.build(), null, null)
 
+        LogManager.addLog(TAG, "Scroll Tool was used.")
+
         return "Success: Scrolled $direction"
     }
 
     // =========================================================================
     // INTERNAL HELPER FUNCTIONS
     // =========================================================================
-
+    /**
+     * Strips the native Android nodes of circular references (which break JSON serialization)
+     * and filters the DOM down to only the useful properties.
+     */
     private fun mapNodeToData(node: AccessibilityNodeInfo): AccessibilityNode {
         val childNodes = mutableListOf<AccessibilityNode>()
 

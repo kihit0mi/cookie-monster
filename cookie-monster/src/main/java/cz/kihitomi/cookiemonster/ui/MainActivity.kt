@@ -53,6 +53,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import cz.kihitomi.cookiemonster.accessibility.MyAccessibilityService
 import cz.kihitomi.cookiemonster.theme.CookieMonsterTheme
 
+/**
+ * Activity serves purely as a status dashboard. It monitors the Android Accessibility Permission, which in turn
+ * serves as a proxy to server state (since the server is automatically started when the permission is granted.
+ */
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -150,6 +154,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     *Android stores enabled accessibility settings in Settings.Secure as a single string.
+     * This functions parses that string to find if application's unique signature is amongst those enabled.
+     */
     private fun isAccessibilityServiceEnabled(context: Context): Boolean {
         val service = "${context.packageName}/${MyAccessibilityService::class.java.name}"
         val enabledServices = Settings.Secure.getString(
@@ -170,6 +178,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Visual indicator of the server status. Mostly here so the UI isn't empty.
+ */
 @Composable
 fun ServerStatusCard(isRunning: Boolean) {
     Card(
@@ -210,6 +221,9 @@ fun ServerStatusCard(isRunning: Boolean) {
     }
 }
 
+/**
+ * Prompts user to enable Accessibility permission.
+ */
 @Composable
 fun PermissionDialog(
     title: String,

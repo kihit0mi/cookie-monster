@@ -23,6 +23,10 @@ import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 
+/**
+ * This is the where the server configuration and the MCP protocols lie. They are translated into native Kotlin
+ * interface calls, thus separating the network logic completely from the OS logic.
+ */
 class CookieMonsterServer(private val actionHandler: AgentActionHandler) {
 
     val mcpSession = Server(
@@ -55,6 +59,7 @@ class CookieMonsterServer(private val actionHandler: AgentActionHandler) {
     fun start(port: Int = 8080) {
         Log.d("MCP_SERVER", "Starting Ktor on port $port")
 
+        //using 0.0.0.0 instead of localhost to allow connections from other devices on the same WiFi network
         embeddedServer(CIO, host = "0.0.0.0", port = port) {
             install(SSE)
             installCors()
@@ -67,7 +72,7 @@ class CookieMonsterServer(private val actionHandler: AgentActionHandler) {
                     return@mcp mcpSession
                 }
             }
-        }.start(wait = false)
+        }.start(wait = false) //
     }
 
     private fun Application.installCors() {
@@ -81,7 +86,7 @@ class CookieMonsterServer(private val actionHandler: AgentActionHandler) {
             allowHeader(HttpHeaders.Authorization)
             allowNonSimpleContentTypes = true
             maxAgeInSeconds = 3600
-            anyHost()
+            anyHost() // This is just a prototype tool, otherwise we would need stricter CORS policies.
         }
     }
 }

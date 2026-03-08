@@ -38,8 +38,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * A screen for the user to see all the tools the LLM is using and app status changes.
+ */
 class ActivityLogger : ComponentActivity() {
 
+    /**
+     * Formatting it here instead of LogManager ensures separation of concerns, LogManager holds the data,
+     * UI displays it - we should decide how to display it here then.
+     */
     private fun formatTimeStamp(timestamp: Long): String {
         val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         return sdf.format(Date(timestamp))
@@ -55,6 +62,8 @@ class ActivityLogger : ComponentActivity() {
                 mutableStateOf(LogManager.getAllLogs())
             }
 
+            // Manually refreshes the UI every two seconds. We are using this instead of StateFlow,
+            // because it's frankly not needed - the logs do not need to be updated that often.
             LaunchedEffect(Unit) {
                 while (true) {
                     delay(2000)
@@ -82,7 +91,7 @@ class ActivityLogger : ComponentActivity() {
                                 .fillMaxSize()
                         ) {
                             Text(
-                                text = "SCRAPE TERMINAL",
+                                text = "LOGS",
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Cyan,
@@ -103,7 +112,21 @@ class ActivityLogger : ComponentActivity() {
                             }
 
                             Button(
-                                onClick = { finish() },
+                                onClick = {
+                                    LogManager.clearLogs()
+                                    refreshTrigger++
+                                          },
+                                modifier = Modifier
+                                    .align(Alignment.CenterHorizontally)
+                                    .padding(16.dp)
+                                    .fillMaxWidth()
+                                    .height(46.dp)
+                            ) {
+                                Text("CLEAR THE LOGS", fontFamily = FontFamily.Monospace)
+                            }
+
+                            Button(
+                                onClick = { finish() }, // closing the activity returns us to the already saved MainActivity, thus saving memory (instead of calling new Intent)
                                 modifier = Modifier
                                     .align(Alignment.CenterHorizontally)
                                     .padding(16.dp)

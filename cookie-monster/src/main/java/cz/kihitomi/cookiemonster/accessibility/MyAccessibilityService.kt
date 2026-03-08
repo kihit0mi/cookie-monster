@@ -301,34 +301,4 @@ class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
             children = childNodes
         )
     }
-
-    private fun saveJsonToFile(jsonString: String) {
-        val fileName = "dom_dump_${System.currentTimeMillis()}.json"
-        val file = File(getExternalFilesDir(null), fileName)
-
-        try {
-            // zapíšeme to do souboru
-            file.writeText(jsonString)
-            Log.d(TAG, "DOM saved: ${file.absolutePath}")
-            LogManager.addLog(TAG, "Saved DOM: $fileName")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to write JSON", e)
-        }
-    }
-
-    private fun tryGetRootNode(attempt: Int) {
-        if (attempt > MAX_ROOT_NODE_ATTEMPTS) return
-
-        val rootNode = rootInActiveWindow
-        if (rootNode != null) {
-            val dataObject = mapNodeToData(rootNode)
-            val jsonString = jsonHandler.encodeToString(dataObject)
-            saveJsonToFile(jsonString)
-
-        } else {
-            Handler(Looper.getMainLooper()).postDelayed({
-                tryGetRootNode(attempt + 1)
-            }, ROOT_NODE_RETRY_DELAY_MS)
-        }
-    }
 }

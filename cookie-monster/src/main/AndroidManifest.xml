@@ -19,7 +19,7 @@
         android:usesCleartextTraffic="true">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.CookieMonster">
             <intent-filter>
@@ -29,13 +29,13 @@
         </activity>
 
         <activity
-            android:name=".ActivityLogger"
+            android:name=".ui.ActivityLogger"
             android:exported="false"
             android:theme="@style/Theme.CookieMonster">
         </activity>
 
         <service
-            android:name=".MyAccessibilityService"
+            android:name=".accessibility.MyAccessibilityService"
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"

@@ -28,7 +28,7 @@ import kotlin.coroutines.resume
  * It is decoupled from the server side completely, the functions here are  called by our bridge - AgentActionHandler.
  */
 @SuppressLint("AccessibilityPolicy")
-class MyAccessibilityService : AccessibilityService(), AgentActionHandler {
+class McpAccessibilityService : AccessibilityService(), AgentActionHandler {
 
     // =========================================================================
     // COMPANION OBJECT & STATE

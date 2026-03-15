@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import cz.kihitomi.cookiemonster.accessibility.MyAccessibilityService
+import cz.kihitomi.cookiemonster.accessibility.McpAccessibilityService
 import cz.kihitomi.cookiemonster.theme.CookieMonsterTheme
 
 /**
@@ -159,7 +159,7 @@ class MainActivity : ComponentActivity() {
      * This functions parses that string to find if application's unique signature is amongst those enabled.
      */
     private fun isAccessibilityServiceEnabled(context: Context): Boolean {
-        val service = "${context.packageName}/${MyAccessibilityService::class.java.name}"
+        val service = "${context.packageName}/${McpAccessibilityService::class.java.name}"
         val enabledServices = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
